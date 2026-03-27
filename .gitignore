@@ -1,0 +1,12 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+data/retrain_uploads/
+*.zip
+models/fruit_model.keras
+models/*.keras
+models/*.h5
+models/*.npy
+models/fruit_model_savedmodel/

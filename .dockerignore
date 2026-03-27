@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+*.pyo
+.git/
+.gitignore
+data/retrain_uploads/
+*.zip

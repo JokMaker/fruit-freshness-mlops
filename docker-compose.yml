@@ -1,0 +1,28 @@
+version: "3.8"
+
+services:
+
+  api:
+    build: .
+    container_name: fruit_freshness_api
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/app/models
+      - ./data:/app/data
+    environment:
+      - PYTHONPATH=/app/src
+    restart: unless-stopped
+
+  ui:
+    build: .
+    container_name: fruit_freshness_ui
+    command: streamlit run ui/app.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://api:8000
+    depends_on:
+      - api
+    restart: unless-stopped

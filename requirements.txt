@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+tensorflow-macos
+tensorflow-metal
+pillow
+numpy
+streamlit
+requests
+python-multipart
+plotly
+pandas
+locust
