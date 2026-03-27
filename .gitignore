@@ -10,3 +10,7 @@ models/*.keras
 models/*.h5
 models/*.npy
 models/fruit_model_savedmodel/
+mlops/
+venv/
+models/fruit_model_final.keras
+models/model_weights.npy
