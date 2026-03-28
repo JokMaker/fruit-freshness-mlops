@@ -11,3 +11,4 @@ plotly
 pandas
 locust
 scipy
+huggingface_hub

@@ -30,11 +30,14 @@ from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
-# Add src/ to path so we can import our modules
+
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from model import load_model, load_class_names, retrain_model
 from prediction import predict_from_bytes
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from download_model import download_model
+download_model()
 
 # App Setup 
 app = FastAPI(
