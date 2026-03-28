@@ -12,6 +12,9 @@ MODEL_DIR  = os.path.join(os.path.dirname(__file__), "models")
 MODEL_FILE = os.path.join(MODEL_DIR, "fruit_model_final.keras")
 CLASS_FILE = os.path.join(MODEL_DIR, "class_names.json")
 
+# Use /tmp for HF cache to avoid permission issues in containers
+os.environ["HF_HOME"] = "/tmp/huggingface"
+
 
 def download_model():
     os.makedirs(MODEL_DIR, exist_ok=True)
