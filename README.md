@@ -1,7 +1,15 @@
+---
+title: Fruit Freshness MLOps
+emoji: 🍎
+colorFrom: green
+colorTo: red
+sdk: docker
+pinned: false
+---
+
 # Fruit Freshness Classifier — MLOps Pipeline
 
 A production-ready MLOps pipeline for classifying fruits as fresh or rotten using VGG16 transfer learning, FastAPI, and Streamlit.
-
 
 ## Project Description
 
@@ -9,12 +17,10 @@ This project demonstrates an end-to-end Machine Learning pipeline for fruit fres
 
 The pipeline includes data preprocessing, model training, a REST API for predictions, a monitoring dashboard, and support for model retraining with newly uploaded data.
 
-
 ## Demo
 
-- **Video Demo:** [YouTube Link](#) ← replace with your YouTube link
-- **Live URL:** [Render Deployment](#) ← replace with your Render URL
-
+- **Video Demo:** YouTube Link ← replace with your YouTube link
+- **Live URL:** https://huggingface.co/spaces/JokMaker/fruit-freshness-mlops
 
 ## Tech Stack
 
@@ -24,9 +30,8 @@ The pipeline includes data preprocessing, model training, a REST API for predict
 | API | FastAPI |
 | UI | Streamlit |
 | Containerization | Docker + Docker Compose |
-| Cloud | Render |
+| Cloud | Hugging Face Spaces |
 | Load Testing | Locust |
-
 
 ## Model Performance
 
@@ -37,7 +42,7 @@ The pipeline includes data preprocessing, model training, a REST API for predict
 | Recall | 99.85% |
 | F1 Score | 99.85% |
 
-### Per-Class Results
+## Per-Class Results
 
 | Class | Precision | Recall | F1-Score | Support |
 |---|---|---|---|---|
@@ -48,7 +53,6 @@ The pipeline includes data preprocessing, model training, a REST API for predict
 | rottenbanana | 1.00 | 1.00 | 1.00 | 530 |
 | rottenoranges | 1.00 | 1.00 | 1.00 | 403 |
 
-
 ## Load Testing Results (Locust)
 
 | Users | Avg Response (ms) | 95th Percentile (ms) | RPS | Failures |
@@ -57,16 +61,15 @@ The pipeline includes data preprocessing, model training, a REST API for predict
 | 100 | 143 | 380 | 15.25 | 0% |
 | 200 | 1023 | 2400 | 27.29 | 0% |
 
-The API handled all load levels with 0% failure rate. Response time increases at higher concurrency but remains stable.
-
-
 ## Project Structure
-```
+
+\`\`\`
 fruit-freshness-mlops/
 ├── README.md
 ├── Dockerfile
 ├── docker-compose.yml
 ├── requirements.txt
+├── download_model.py
 ├── notebook/
 │   └── MLPOS.ipynb
 ├── src/
@@ -81,59 +84,60 @@ fruit-freshness-mlops/
 │   ├── train/
 │   └── test/
 ├── models/
-│   ├── fruit_model.keras
+│   ├── fruit_model_final.keras
 │   └── class_names.json
 └── locust/
     └── locustfile.py
-```
-
+\`\`\`
 
 ## Setup Instructions
 
 ### 1. Clone the Repository
-```bash
-git clone https://github.com/YOUR_USERNAME/fruit-freshness-mlops.git
+
+\`\`\`bash
+git clone https://github.com/JokMaker/fruit-freshness-mlops.git
 cd fruit-freshness-mlops
-```
+\`\`\`
 
 ### 2. Download the Dataset
 
-Download from Kaggle:
-https://www.kaggle.com/datasets/sriramr/fruits-fresh-and-rotten-for-classification
+Download from Kaggle: https://www.kaggle.com/datasets/sriramr/fruits-fresh-and-rotten-for-classification
 
 Place unzipped contents into `data/` folder.
 
 ### 3. Create Virtual Environment
-```bash
+
+\`\`\`bash
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-```
+\`\`\`
 
-### 4. Download the Model
+### 4. Model
 
-Download `fruit_model.keras` and `class_names.json` from the releases section and place them in `models/`.
+The model is automatically downloaded from Hugging Face Hub on startup.
+Model repo: https://huggingface.co/JokMaker/fruit-freshness-vgg16
 
 ### 5. Run Locally
 
 Terminal 1 — Start API:
-```bash
+\`\`\`bash
 uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
-```
+\`\`\`
 
 Terminal 2 — Start UI:
-```bash
+\`\`\`bash
 streamlit run ui/app.py
-```
+\`\`\`
 
 - API docs: http://localhost:8000/docs
 - UI: http://localhost:8501
 
 ### 6. Run with Docker
-```bash
-docker-compose up --build
-```
 
+\`\`\`bash
+docker-compose up --build
+\`\`\`
 
 ## API Endpoints
 
@@ -146,16 +150,13 @@ docker-compose up --build
 | POST | /upload | Upload new images for retraining |
 | POST | /retrain | Trigger model retraining |
 
-
-
 ## Load Testing with Locust
-```bash
+
+\`\`\`bash
 locust -f locust/locustfile.py --host=http://localhost:8000
-```
+\`\`\`
 
 Open http://localhost:8089 to access the Locust dashboard.
-
-
 
 ## UI Pages
 
@@ -163,7 +164,6 @@ Open http://localhost:8089 to access the Locust dashboard.
 - **Predict** — Upload a fruit image and get a prediction
 - **Visualize** — Dataset insights and model evaluation charts
 - **Retrain** — Upload new images and trigger retraining
-
 
 ## Dataset
 
