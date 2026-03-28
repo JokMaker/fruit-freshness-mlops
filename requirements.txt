@@ -1,7 +1,6 @@
 fastapi
 uvicorn
-tensorflow-macos
-tensorflow-metal
+tensorflow
 pillow
 numpy
 streamlit
