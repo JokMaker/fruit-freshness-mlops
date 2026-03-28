@@ -71,6 +71,26 @@ def get_test_generator(test_dir: str):
 
 
 def get_retrain_generators(new_data_dir: str, validation_split: float = 0.2):
+    """
+    Build retraining generators from uploaded images.
+    Always uses all 6 CLASS_NAMES so output shape matches the model.
+    Creates empty dirs for missing classes so Keras doesn't error.
+    """
+    # Ensure all 6 class folders exist (empty ones are fine)
+    for c in CLASS_NAMES:
+        os.makedirs(os.path.join(new_data_dir, c), exist_ok=True)
+
+    # Check at least one class has images
+    present_classes = [
+        c for c in CLASS_NAMES
+        if len(os.listdir(os.path.join(new_data_dir, c))) > 0
+    ]
+    if not present_classes:
+        raise ValueError(
+            "No images found in any class folder. "
+            "Please upload images first."
+        )
+
     datagen = ImageDataGenerator(
         rescale=1.0 / 255,
         rotation_range=15,
@@ -83,6 +103,7 @@ def get_retrain_generators(new_data_dir: str, validation_split: float = 0.2):
         target_size=IMG_SIZE,
         batch_size=16,
         class_mode="categorical",
+        classes=CLASS_NAMES,   # always all 6 — matches model output
         subset="training",
         seed=SEED,
     )
@@ -92,6 +113,7 @@ def get_retrain_generators(new_data_dir: str, validation_split: float = 0.2):
         target_size=IMG_SIZE,
         batch_size=16,
         class_mode="categorical",
+        classes=CLASS_NAMES,   # always all 6 — matches model output
         subset="validation",
         seed=SEED,
     )

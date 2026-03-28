@@ -19,6 +19,7 @@ os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
 import time
 import shutil
+import threading
 from datetime import datetime
 from typing import Optional
 
@@ -35,7 +36,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 from model import load_model, load_class_names, retrain_model
 from prediction import predict_from_bytes
 
-# ── App Setup ──────────────────────────────────────────────────────────────────
+# App Setup 
 app = FastAPI(
     title="Fruit Freshness Classifier API",
     description="MLOps API for predicting fruit freshness and triggering retraining.",
@@ -49,13 +50,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── Global State ───────────────────────────────────────────────────────────────
+# Global State
 MODEL_PATH     = os.path.join(os.path.dirname(__file__), '..', 'models', 'fruit_model_final.keras')
 UPLOAD_DIR     = os.path.join(os.path.dirname(__file__), '..', 'data', 'retrain_uploads')
 START_TIME     = datetime.utcnow()
 model          = None
 class_names    = None
-retrain_status = {"is_retraining": False, "last_retrain": None, "last_metrics": None}
+retrain_status = {"is_retraining": False, "last_retrain": None, "last_metrics": None, "last_error": None}
 
 
 def get_model():
@@ -74,7 +75,7 @@ def get_class_names():
     return class_names
 
 
-# ── Routes ─────────────────────────────────────────────────────────────────────
+# Routes
 
 @app.get("/")
 def root():
@@ -101,6 +102,7 @@ def get_status():
         "is_retraining": retrain_status["is_retraining"],
         "last_retrain": retrain_status["last_retrain"],
         "last_metrics": retrain_status["last_metrics"],
+        "last_retrain_error": retrain_status["last_error"],
     }
 
 
@@ -160,37 +162,55 @@ async def upload_images(
     }
 
 
+def _run_retrain(epochs: int):
+    """Background worker: retrain model and update global state."""
+    global model
+    try:
+        m = get_model()
+        metrics = retrain_model(m, UPLOAD_DIR, epochs=epochs, save_path=MODEL_PATH)
+        model = load_model(MODEL_PATH)
+        retrain_status["last_retrain"] = datetime.utcnow().isoformat()
+        retrain_status["last_metrics"] = metrics
+        retrain_status["last_error"]   = None
+    except Exception as e:
+        retrain_status["last_error"] = str(e)
+    finally:
+        retrain_status["is_retraining"] = False
+
+
 @app.post("/retrain")
 def trigger_retrain(epochs: int = 5):
     if retrain_status["is_retraining"]:
         raise HTTPException(status_code=409, detail="Retraining already in progress.")
 
-    if not os.path.exists(UPLOAD_DIR) or not os.listdir(UPLOAD_DIR):
+    # Verify there is at least one valid class subfolder with images
+    if not os.path.exists(UPLOAD_DIR):
         raise HTTPException(
             status_code=400,
-            detail="No uploaded data found. Please upload images first via /upload."
+            detail="No uploaded data found. Please upload images first via /upload.",
+        )
+    valid_dirs = [
+        d for d in os.listdir(UPLOAD_DIR)
+        if os.path.isdir(os.path.join(UPLOAD_DIR, d))
+        and len(os.listdir(os.path.join(UPLOAD_DIR, d))) > 0
+    ]
+    if not valid_dirs:
+        raise HTTPException(
+            status_code=400,
+            detail="Upload folder is empty. Please upload images first via /upload.",
         )
 
-    try:
-        retrain_status["is_retraining"] = True
-        m = get_model()
-        metrics = retrain_model(m, UPLOAD_DIR, epochs=epochs, save_path=MODEL_PATH)
+    retrain_status["is_retraining"] = True
+    retrain_status["last_error"]    = None
 
-        retrain_status["is_retraining"] = False
-        retrain_status["last_retrain"] = datetime.utcnow().isoformat()
-        retrain_status["last_metrics"] = metrics
+    thread = threading.Thread(target=_run_retrain, args=(epochs,), daemon=True)
+    thread.start()
 
-        global model
-        model = load_model(MODEL_PATH)
-
-        return {
-            "message": "Retraining completed successfully!",
-            "metrics": metrics,
-            "timestamp": retrain_status["last_retrain"],
-        }
-    except Exception as e:
-        retrain_status["is_retraining"] = False
-        raise HTTPException(status_code=500, detail=f"Retraining failed: {str(e)}")
+    return {
+        "message": "Retraining started in the background.",
+        "epochs_requested": epochs,
+        "poll_status": "/status",
+    }
 
 
 if __name__ == "__main__":

@@ -18,7 +18,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 import pandas as pd
 
-# ── Config ─────────────────────────────────────────────────────────────────────
+# Config 
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 
 st.set_page_config(
@@ -28,7 +28,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ── Sidebar ────────────────────────────────────────────────────────────────────
+# Sidebar 
 st.sidebar.title("Fruit Freshness Classifier")
 st.sidebar.markdown("MLOps Dashboard")
 st.sidebar.markdown("---")
@@ -41,7 +41,7 @@ page = st.sidebar.radio(
 st.sidebar.markdown("---")
 st.sidebar.markdown(f"**API:** `{API_URL}`")
 
-# ── Helper ─────────────────────────────────────────────────────────────────────
+# Helper
 def check_api():
     try:
         r = requests.get(f"{API_URL}/status", timeout=5)
@@ -298,18 +298,42 @@ elif page == "Retrain":
     st.warning("Retraining will take several minutes. Do not close this page.")
 
     if st.button("Start Retraining", type="primary"):
-        with st.spinner("Retraining in progress... please wait."):
-            try:
-                response = requests.post(
-                    f"{API_URL}/retrain",
-                    params={"epochs": epochs},
-                    timeout=600,
-                )
-                if response.status_code == 200:
-                    result = response.json()
-                    st.success("Retraining completed!")
-                    st.json(result)
-                else:
-                    st.error(f"Retraining failed: {response.json().get('detail')}")
-            except Exception as e:
-                st.error(f"Error: {str(e)}")
+        try:
+            response = requests.post(
+                f"{API_URL}/retrain",
+                params={"epochs": epochs},
+                timeout=30,
+            )
+            if response.status_code == 200:
+                st.success("Retraining started in the background!")
+                st.info("The model is now retraining. Check the Dashboard page for live status, or wait here and refresh.")
+
+                # Poll until done (max 10 minutes)
+                import time
+                progress_bar = st.progress(0, text="Retraining in progress...")
+                for i in range(120):  # 120 x 5s = 10 min
+                    time.sleep(5)
+                    try:
+                        status_resp = requests.get(f"{API_URL}/status", timeout=5)
+                        status_data = status_resp.json()
+                        if not status_data.get("is_retraining"):
+                            progress_bar.progress(100, text="Done!")
+                            err = status_data.get("last_retrain_error")
+                            if err:
+                                st.error(f"Retraining failed: {err}")
+                            else:
+                                st.success("Retraining completed!")
+                                metrics = status_data.get("last_metrics")
+                                if metrics:
+                                    st.json(metrics)
+                            break
+                        progress = min(int((i / 120) * 100), 95)
+                        progress_bar.progress(progress, text=f"Retraining in progress... ({i*5}s elapsed)")
+                    except Exception:
+                        pass
+            elif response.status_code == 409:
+                st.warning("Retraining is already in progress. Check the Dashboard for status.")
+            else:
+                st.error(f"Retraining failed: {response.json().get('detail')}")
+        except Exception as e:
+            st.error(f"Error: {str(e)}")
