@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+tensorflow
+pillow
+numpy
+streamlit
+requests
+python-multipart
+plotly
+pandas
+locust
+scipy
+huggingface_hub

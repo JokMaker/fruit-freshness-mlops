@@ -18,8 +18,8 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install
-COPY --chown=user requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY --chown=user requirements-deploy.txt .
+RUN pip install --no-cache-dir -r requirements-deploy.txt
 
 # Copy all project files
 COPY --chown=user . /app
