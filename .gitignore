@@ -14,3 +14,4 @@ mlops/
 venv/
 models/fruit_model_final.keras
 models/model_weights.npy
+data/test_images/
