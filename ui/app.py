@@ -19,7 +19,7 @@ import plotly.express as px
 import pandas as pd
 
 # Config 
-API_URL = os.getenv("API_URL", "http://localhost:7860/api")
+API_URL = os.getenv("API_URL", "http://localhost:8000")
 
 st.set_page_config(
     page_title="Fruit Freshness Classifier",
