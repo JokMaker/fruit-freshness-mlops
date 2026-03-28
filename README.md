@@ -62,8 +62,7 @@ The pipeline includes data preprocessing, model training, a REST API for predict
 | 200 | 1023 | 2400 | 27.29 | 0% |
 
 ## Project Structure
-
-\`\`\`
+```
 fruit-freshness-mlops/
 ├── README.md
 ├── Dockerfile
@@ -88,16 +87,15 @@ fruit-freshness-mlops/
 │   └── class_names.json
 └── locust/
     └── locustfile.py
-\`\`\`
+```
 
 ## Setup Instructions
 
 ### 1. Clone the Repository
-
-\`\`\`bash
+```bash
 git clone https://github.com/JokMaker/fruit-freshness-mlops.git
 cd fruit-freshness-mlops
-\`\`\`
+```
 
 ### 2. Download the Dataset
 
@@ -106,38 +104,37 @@ Download from Kaggle: https://www.kaggle.com/datasets/sriramr/fruits-fresh-and-r
 Place unzipped contents into `data/` folder.
 
 ### 3. Create Virtual Environment
-
-\`\`\`bash
+```bash
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-\`\`\`
+```
 
 ### 4. Model
 
 The model is automatically downloaded from Hugging Face Hub on startup.
-Model repo: https://huggingface.co/JokMaker/fruit-freshness-vgg16
+- Model repo: https://huggingface.co/JokMaker/fruit-freshness-vgg16
+- Model download (GitHub Release): https://github.com/JokMaker/fruit-freshness-mlops/releases/tag/v1.0.0
 
 ### 5. Run Locally
 
 Terminal 1 — Start API:
-\`\`\`bash
+```bash
 uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
-\`\`\`
+```
 
 Terminal 2 — Start UI:
-\`\`\`bash
+```bash
 streamlit run ui/app.py
-\`\`\`
+```
 
 - API docs: http://localhost:8000/docs
 - UI: http://localhost:8501
 
 ### 6. Run with Docker
-
-\`\`\`bash
+```bash
 docker-compose up --build
-\`\`\`
+```
 
 ## API Endpoints
 
@@ -151,10 +148,9 @@ docker-compose up --build
 | POST | /retrain | Trigger model retraining |
 
 ## Load Testing with Locust
-
-\`\`\`bash
+```bash
 locust -f locust/locustfile.py --host=http://localhost:8000
-\`\`\`
+```
 
 Open http://localhost:8089 to access the Locust dashboard.
 
