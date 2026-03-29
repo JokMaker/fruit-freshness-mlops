@@ -1,27 +1,21 @@
 """
 main.py
 FastAPI backend for the Fruit Freshness Classifier.
-Endpoints:
-  GET  /           - Health check
-  GET  /status     - Model uptime and info
-  POST /predict    - Predict freshness from uploaded image
-  POST /upload     - Upload new images for retraining
-  POST /retrain    - Trigger model retraining
-  GET  /classes    - Get all class names
 """
 
 import os
 import sys
 
-# Disable Metal GPU to avoid floating point precision issues
 os.environ['CUDA_VISIBLE_DEVICES'] = ''
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+os.environ['HF_HOME'] = '/tmp/huggingface'
 
 import time
 import shutil
 import threading
 from datetime import datetime
 from typing import Optional
+from contextlib import asynccontextmanager
 
 import tensorflow as tf
 tf.config.set_visible_devices([], 'GPU')
@@ -30,20 +24,39 @@ from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
-
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from model import load_model, load_class_names, retrain_model
 from prediction import predict_from_bytes
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from download_model import download_model
-download_model()
 
-# App Setup 
+# ── Global State ───────────────────────────────────────────────────────────────
+MODEL_PATH     = os.path.join(os.path.dirname(__file__), '..', 'models', 'fruit_model_final.keras')
+UPLOAD_DIR     = os.path.join(os.path.dirname(__file__), '..', 'data', 'retrain_uploads')
+START_TIME     = datetime.utcnow()
+model          = None
+class_names    = None
+retrain_status = {"is_retraining": False, "last_retrain": None, "last_metrics": None, "last_error": None}
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Download model on startup
+    try:
+        from download_model import download_model
+        print("Checking model files...")
+        download_model()
+        print("Model files ready.")
+    except Exception as e:
+        print(f"WARNING: Model download failed: {e}")
+    yield
+
+
 app = FastAPI(
     title="Fruit Freshness Classifier API",
     description="MLOps API for predicting fruit freshness and triggering retraining.",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -52,14 +65,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Global State
-MODEL_PATH     = os.path.join(os.path.dirname(__file__), '..', 'models', 'fruit_model_final.keras')
-UPLOAD_DIR     = os.path.join(os.path.dirname(__file__), '..', 'data', 'retrain_uploads')
-START_TIME     = datetime.utcnow()
-model          = None
-class_names    = None
-retrain_status = {"is_retraining": False, "last_retrain": None, "last_metrics": None, "last_error": None}
 
 
 def get_model():
@@ -77,8 +82,6 @@ def get_class_names():
         )
     return class_names
 
-
-# Routes
 
 @app.get("/")
 def root():
@@ -117,11 +120,7 @@ def get_classes():
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     if file.content_type not in ["image/jpeg", "image/png", "image/jpg"]:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid file type. Please upload a JPG or PNG image."
-        )
-
+        raise HTTPException(status_code=400, detail="Invalid file type. Please upload a JPG or PNG image.")
     try:
         image_bytes = await file.read()
         m = get_model()
@@ -140,10 +139,7 @@ async def upload_images(
 ):
     valid_classes = get_class_names()
     if class_name not in valid_classes:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid class '{class_name}'. Valid classes: {valid_classes}"
-        )
+        raise HTTPException(status_code=400, detail=f"Invalid class '{class_name}'. Valid classes: {valid_classes}")
 
     class_upload_dir = os.path.join(UPLOAD_DIR, class_name)
     os.makedirs(class_upload_dir, exist_ok=True)
@@ -166,7 +162,6 @@ async def upload_images(
 
 
 def _run_retrain(epochs: int):
-    """Background worker: retrain model and update global state."""
     global model
     try:
         m = get_model()
@@ -186,22 +181,16 @@ def trigger_retrain(epochs: int = 5):
     if retrain_status["is_retraining"]:
         raise HTTPException(status_code=409, detail="Retraining already in progress.")
 
-    # Verify there is at least one valid class subfolder with images
     if not os.path.exists(UPLOAD_DIR):
-        raise HTTPException(
-            status_code=400,
-            detail="No uploaded data found. Please upload images first via /upload.",
-        )
+        raise HTTPException(status_code=400, detail="No uploaded data found. Please upload images first via /upload.")
+
     valid_dirs = [
         d for d in os.listdir(UPLOAD_DIR)
         if os.path.isdir(os.path.join(UPLOAD_DIR, d))
         and len(os.listdir(os.path.join(UPLOAD_DIR, d))) > 0
     ]
     if not valid_dirs:
-        raise HTTPException(
-            status_code=400,
-            detail="Upload folder is empty. Please upload images first via /upload.",
-        )
+        raise HTTPException(status_code=400, detail="Upload folder is empty. Please upload images first via /upload.")
 
     retrain_status["is_retraining"] = True
     retrain_status["last_error"]    = None
