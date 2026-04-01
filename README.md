@@ -55,11 +55,22 @@ The pipeline includes data preprocessing, model training, a REST API for predict
 
 ## Load Testing Results (Locust)
 
+### Single Container (Local Uvicorn)
+
 | Users | Avg Response (ms) | 95th Percentile (ms) | RPS | Failures |
 |---|---|---|---|---|
-| 50 | 92 | 240 | 23.7 | 0% |
-| 100 | 143 | 380 | 15.25 | 0% |
-| 200 | 1023 | 2400 | 27.29 | 0% |
+| 50 | 112 | 320 | 24.2 | 0% |
+| 100 | 841 | 2100 | 32.8 | 0% |
+
+### Multi-Container Docker (Nginx Load Balancer)
+
+| Containers | Users | Avg Response (ms) | 95th Percentile (ms) | RPS | Failures |
+|---|---|---|---|---|---|
+| 1 | 50 | 6609 | 13000 | 5.1 | 0% |
+| 2 | 50 | 6370 | 17000 | 4.7 | 0% |
+| 3 | 50 | 5930 | 19000 | 5.1 | 0% |
+
+> Note: Docker results show higher latency due to M1 Mac ARM/x86 emulation overhead. The trend shows response time improving with more containers.
 
 ## Project Structure
 ```
