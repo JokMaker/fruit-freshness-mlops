@@ -19,7 +19,7 @@ The pipeline includes data preprocessing, model training, a REST API for predict
 
 ## Demo
 
-- **Video Demo:** YouTube Link ← replace with your YouTube link
+- **Video Demo:** https://youtu.be/8fVHnhkYGZ8
 - **Live URL:** https://huggingface.co/spaces/JokMaker/fruit-freshness-mlops
 
 ## Tech Stack
